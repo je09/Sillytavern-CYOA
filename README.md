@@ -2,13 +2,7 @@
 
 > **⚠️ ARCHIVE NOTICE: This repository has been archived and is no longer being maintained. My current work is now focused on the [NarratrixAI App](https://narratrixai.com).**
 
-This extension adds Choose Your Own Adventure (CYOA) style responses to your SillyTavern chats. It generates multiple response options for the user to choose from, enhancing interactivity and allowing for branching narratives.
-
-<p align="center">
-  <img src="assets/response.png" width="50%">
-</p>
-
-
+---
 
 # SillyTavern CYOA Responses Extension
 This extension adds Choose Your Own Adventure (CYOA) style responses to your SillyTavern chats. It generates multiple response options for the user to choose from, enhancing interactivity and allowing for branching narratives.
