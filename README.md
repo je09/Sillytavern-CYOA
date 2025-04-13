@@ -8,8 +8,6 @@ This extension adds Choose Your Own Adventure (CYOA) style responses to your Sil
   <img src="assets/response.png" width="50%">
 </p>
 
-## Features
-...
 
 
 # SillyTavern CYOA Responses Extension
