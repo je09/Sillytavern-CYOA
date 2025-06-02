@@ -16,11 +16,11 @@
     margin-bottom: 0.5em;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion {
+.mes_text .custom-suggestions>.custom-suggestion {
     display: flex;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button {
+.mes_text .custom-suggestions>.custom-suggestion button {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
@@ -37,20 +37,63 @@
 }
 
 
-.mes_text .custom-suggestions > .custom-suggestion button:hover {
+.mes_text .custom-suggestions>.custom-suggestion button:hover {
     opacity: 1;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button.custom-suggestion {
+.mes_text .custom-suggestions>.custom-suggestion button.custom-suggestion {
     flex: 1 1 auto;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion {
+.mes_text .custom-suggestions>.custom-suggestion button.custom-edit-suggestion {
     flex: 0 0 auto;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion .custom-text {
+.mes_text .custom-suggestions>.custom-suggestion button.custom-edit-suggestion .custom-text {
     display: none;
+}
+
+/* CYOA Extension Menu Button Styles */
+#cyoa_regenerate_menu_btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em;
+    text-decoration: none;
+    color: var(--SmartThemeBodyColor);
+    transition: background-color 0.2s;
+}
+
+#cyoa_regenerate_menu_btn:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+    text-decoration: none;
+    color: var(--SmartThemeBodyColor);
+}
+
+#cyoa_regenerate_menu_btn i {
+    font-size: 1em;
+}
+
+#cyoa_regenerate_toolbar_btn {
+    margin: 0 0.25em;
+    padding: 0.5em;
+    background-color: var(--SmartThemeEmptyColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    color: var(--SmartThemeBodyColor);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+}
+
+#cyoa_regenerate_toolbar_btn:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+#cyoa_regenerate_toolbar_btn i {
+    font-size: 1em;
 }
 
 @media (max-width: 1200px) {
@@ -65,18 +108,18 @@
         margin-bottom: 0.3em;
     }
 
-    .mes_text .custom-suggestions > .custom-suggestion {
+    .mes_text .custom-suggestions>.custom-suggestion {
         flex-direction: column;
     }
 
-    .mes_text .custom-suggestions > .custom-suggestion button {
+    .mes_text .custom-suggestions>.custom-suggestion button {
         font-size: 0.9em;
         padding: 0.75em;
         margin: 0.1em 0;
         width: 100%;
     }
 
-    .mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion {
+    .mes_text .custom-suggestions>.custom-suggestion button.custom-edit-suggestion {
         margin-top: 0.2em;
     }
 }

@@ -8,14 +8,21 @@
             <div class="cyoa_settings-extension_block flex-container">
                 <label for="cyoa_llm_prompt">LLM Prompt for Options</label>
                 <small><i id="hint">Use {{suggestionNumber}} for the Number of Responses.</i></small>
-                <textarea id="cyoa_llm_prompt" class="text_pole textarea_compact" rows="4" placeholder="Enter the system prompt for the LLM to generate CYOA options"></textarea>
+                <textarea id="cyoa_llm_prompt" class="text_pole textarea_compact" rows="4"
+                    placeholder="Enter the system prompt for the LLM to generate CYOA options"></textarea>
             </div>
             </br>
             <div class="cyoa_settings-extension_block flex-container">
                 <label for="cyoa_llm_prompt_impersonate">LLM Prompt for Impersonation</label>
                 <small><i id="hint">Use {{suggestionText}} for the text from the chosen context.</i></small>
-                <textarea id="cyoa_llm_prompt_impersonate" class="text_pole textarea_compact" rows="4" placeholder="Enter the system prompt for the LLM to generate impersonated responses"></textarea>
+                <textarea id="cyoa_llm_prompt_impersonate" class="text_pole textarea_compact" rows="4"
+                    placeholder="Enter the system prompt for the LLM to generate impersonated responses"></textarea>
             </div>
+            </br>
+            <label class="checkbox_label" for="cyoa_auto_generate">
+                <input id="cyoa_auto_generate" type="checkbox" />
+                <span>Auto-generate CYOA options after character responses</span>
+            </label>
             </br>
             <label class="checkbox_label" for="cyoa_apply_wi_an">
                 <input id="cyoa_apply_wi_an" type="checkbox" />
@@ -27,7 +34,8 @@
                 <input id="cyoa_num_responses" type="range" min="1" max="10" step="1" value="3" />
             </div>
             </br>
-            <label for="cyoa_response_length">API response length: <span id="cyoa_response_length_value">100</span></label>
+            <label for="cyoa_response_length">API response length: <span
+                    id="cyoa_response_length_value">100</span></label>
             <div class="range-block">
                 <input id="cyoa_response_length" type="range" min="1" max="2000" step="25" value="500" />
             </div>

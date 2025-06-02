@@ -1,25 +1,29 @@
 import {
     extension_settings,
     getContext,
-  } from "../../../extensions.js";
+    eventSource,
+    event_types,
+} from "../../../extensions.js";
 
-import { saveSettingsDebounced,
+import {
+    saveSettingsDebounced,
     setEditedMessageId,
     generateQuietPrompt,
     is_send_press,
     substituteParamsExtended,
- } from "../../../../script.js";
+} from "../../../../script.js";
 
- import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
- import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
- import { getMessageTimeStamp } from '../../../RossAscends-mods.js';
- import { MacrosParser } from '../../../macros.js';
- import { is_group_generating, selected_group } from '../../../group-chats.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { getMessageTimeStamp } from '../../../RossAscends-mods.js';
+import { MacrosParser } from '../../../macros.js';
+import { is_group_generating, selected_group } from '../../../group-chats.js';
 
 const extensionName = "Sillytavern-CYOA";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: false,
+    auto_generate: false,
     llm_prompt: `Stop the roleplay now and provide a response with {{suggestionNumber}} brief distinct single-sentence suggestions for the next story beat on {{user}} perspective. Ensure each suggestion aligns with its corresponding description:
 1. Eases tension and improves the protagonist's situation
 2. Creates or increases tension and worsens the protagonist's situation
@@ -40,6 +44,32 @@ Do not include any other content in your response.`,
     response_length: 500,
 };
 let inApiCall = false;
+let lastProcessedMessageId = -1;
+
+/**
+ * Utility function to wait until a condition is met
+ * @param {Function} condition - Function that returns true when condition is met
+ * @param {number} timeout - Maximum time to wait in milliseconds
+ * @param {number} interval - Check interval in milliseconds
+ * @returns {Promise}
+ */
+function waitUntilCondition(condition, timeout = 30000, interval = 100) {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+
+        const check = () => {
+            if (condition()) {
+                resolve();
+            } else if (Date.now() - startTime > timeout) {
+                reject(new Error('Timeout waiting for condition'));
+            } else {
+                setTimeout(check, interval);
+            }
+        };
+
+        check();
+    });
+}
 
 /**
  * Parses the CYOA response and returns the suggestions buttons
@@ -63,8 +93,8 @@ function parseResponse(response) {
     }
 
     const newResponse = suggestions.map((suggestion) =>
-`<div class="suggestion"><button class="suggestion">${suggestion}</button><button class="edit-suggestion fa-solid fa-pen-to-square"><span class="text">${suggestion}</span></button></div>`);
-    return `<div class=\"suggestions\">${newResponse.join("")}</div>`
+        `<div class="custom-suggestion"><button class="custom-suggestion">${suggestion}</button><button class="custom-edit-suggestion fa-solid fa-pen-to-square"><span class="custom-text">${suggestion}</span></button></div>`);
+    return `<div class=\"custom-suggestions\">${newResponse.join("")}</div>`
 }
 
 async function waitForGeneration() {
@@ -104,24 +134,34 @@ async function requestCYOAResponses() {
         return;
     }
 
-    removeLastCYOAMessage(chat);
+    inApiCall = true;
 
-    await waitForGeneration();
+    try {
+        removeLastCYOAMessage(chat);
 
-    toastr.info('CYOA: Generating response...');
-    const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
-    const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
-    const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
-    //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
-    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, "Suggestion List", responseLength);
+        await waitForGeneration();
 
-    const parsedResponse = parseResponse(response);
-    if (!parsedResponse) {
-        toastr.error('CYOA: Failed to parse response');
-        return;
+        toastr.info('CYOA: Generating response...');
+        const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
+        const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
+        const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
+        //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
+        const response = await generateQuietPrompt(prompt, false, !useWIAN, null, "Suggestion List", responseLength);
+
+        const parsedResponse = parseResponse(response);
+        if (!parsedResponse) {
+            toastr.error('CYOA: Failed to parse response');
+            return;
+        }
+
+        await sendMessageToUI(parsedResponse);
+        toastr.success('CYOA: Options generated successfully');
+    } catch (error) {
+        console.error('CYOA generation error:', error);
+        toastr.error('CYOA: Failed to generate options');
+    } finally {
+        inApiCall = false;
     }
-
-    await sendMessageToUI(parsedResponse);
 }
 
 /**
@@ -209,29 +249,77 @@ async function handleCYOABtn(event) {
 }
 
 /**
- * Handles the CYOA by sending the text to the User Input box
- * @param {*} event
+ * Checks if auto-generation should be triggered for the given message
+ * @param {Object} messageData 
+ * @returns {boolean}
  */
-// function handleCYOAEditBtn(event) {
-//     const $button = $(event.target);
-//     const text = $button.find('.custom-text').text().trim();
-//     if (text.length === 0) {
-//         return;
-//     }
+function shouldAutoGenerate(messageData) {
+    const context = getContext();
+    const chat = context.chat;
 
-//     removeLastCYOAMessage();
-//     const inputTextarea = document.querySelector('#send_textarea');
-//     if (inputTextarea instanceof HTMLTextAreaElement) {
-//         inputTextarea.value = text;
-//     }
-// }
+    // Check if auto-generation is enabled
+    if (!extension_settings.cyoa_responses?.auto_generate) {
+        return false;
+    }
 
+    // No characters or group selected
+    if (!context.groupId && context.characterId === undefined) {
+        return false;
+    }
+
+    // No messages in chat
+    if (chat.length === 0) {
+        return false;
+    }
+
+    const lastMessage = chat[chat.length - 1];
+
+    // Check if we already processed this message
+    if (lastProcessedMessageId === lastMessage.mesId) {
+        return false;
+    }
+
+    // Only auto-generate for character messages (not user messages)
+    if (lastMessage.is_user || lastMessage.is_system) {
+        return false;
+    }
+
+    // Don't auto-generate if the last message is already a CYOA message
+    if (lastMessage?.extra?.model === 'cyoa') {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Event handler for message reception that triggers auto-generation
+ * @param {Object} messageData 
+ */
+async function onMessageReceived(messageData) {
+    if (!shouldAutoGenerate(messageData)) {
+        return;
+    }
+
+    const context = getContext();
+    const lastMessage = context.chat[context.chat.length - 1];
+    lastProcessedMessageId = lastMessage.mesId;
+
+    // Add a small delay to ensure the message is fully processed
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+        await requestCYOAResponses();
+    } catch (error) {
+        console.error('CYOA auto-generation failed:', error);
+    }
+}
 
 /**
  * Settings Stuff
  */
 function loadSettings() {
-  extension_settings.cyoa_responses = extension_settings.cyoa_responses || {};
+    extension_settings.cyoa_responses = extension_settings.cyoa_responses || {};
     if (Object.keys(extension_settings.cyoa_responses).length === 0) {
         extension_settings.cyoa_responses = {};
     }
@@ -239,6 +327,7 @@ function loadSettings() {
 
     $('#cyoa_llm_prompt').val(extension_settings.cyoa_responses.llm_prompt).trigger('input');
     $('#cyoa_llm_prompt_impersonate').val(extension_settings.cyoa_responses.llm_prompt_impersonate).trigger('input');
+    $('#cyoa_auto_generate').prop('checked', extension_settings.cyoa_responses.auto_generate).trigger('input');
     $('#cyoa_apply_wi_an').prop('checked', extension_settings.cyoa_responses.apply_wi_an).trigger('input');
     $('#cyoa_num_responses').val(extension_settings.cyoa_responses.num_responses).trigger('input');
     $('#cyoa_num_responses_value').text(extension_settings.cyoa_responses.num_responses);
@@ -248,28 +337,34 @@ function loadSettings() {
 }
 
 function addEventListeners() {
-    $('#cyoa_llm_prompt').on('input', function() {
+    $('#cyoa_llm_prompt').on('input', function () {
         extension_settings.cyoa_responses.llm_prompt = $(this).val();
         saveSettingsDebounced();
     });
 
-    $('#cyoa_llm_prompt_impersonate').on('input', function() {
+    $('#cyoa_llm_prompt_impersonate').on('input', function () {
         extension_settings.cyoa_responses.llm_prompt_impersonate = $(this).val();
         saveSettingsDebounced();
     });
 
-    $('#cyoa_apply_wi_an').on('change', function() {
+    $('#cyoa_auto_generate').on('change', function () {
+        extension_settings.cyoa_responses.auto_generate = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#cyoa_apply_wi_an').on('change', function () {
         extension_settings.cyoa_responses.apply_wi_an = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
-    $('#cyoa_num_responses').on('input', function() {
+
+    $('#cyoa_num_responses').on('input', function () {
         const value = $(this).val();
         extension_settings.cyoa_responses.num_responses = Number(value);
         $('#cyoa_num_responses_value').text(value);
         saveSettingsDebounced();
     });
 
-    $('#cyoa_response_length').on('input', function() {
+    $('#cyoa_response_length').on('input', function () {
         const value = $(this).val();
         extension_settings.cyoa_responses.response_length = Number(value);
         $('#cyoa_response_length_value').text(value);
@@ -285,6 +380,81 @@ jQuery(async () => {
     $("#extensions_settings").append(settingsHtml);
     loadSettings();
     addEventListeners();
+
+    // Add regenerate button to Extensions menu
+    const addRegenerateButton = () => {
+        // Try multiple possible selectors for the Extensions menu
+        const extensionMenuSelectors = [
+            '#extensionsMenu',
+            '#extensions_menu',
+            '.extensions_menu',
+            '#right-nav-panel .list-group',
+            '#extensionsMenuButton + .dropdown-menu'
+        ];
+
+        let extensionMenu = null;
+        for (const selector of extensionMenuSelectors) {
+            extensionMenu = $(selector);
+            if (extensionMenu.length > 0) {
+                break;
+            }
+        }
+
+        if (extensionMenu && extensionMenu.length > 0) {
+            const regenerateMenuItem = $(`
+                <li class="list-group-item">
+                    <a id="cyoa_regenerate_menu_btn" href="javascript:void(0)" class="extension-button">
+                        <i class="fa-solid fa-refresh"></i>
+                        <span>Regenerate CYOA Options</span>
+                    </a>
+                </li>
+            `);
+            extensionMenu.append(regenerateMenuItem);
+
+            $('#cyoa_regenerate_menu_btn').on('click', async function (e) {
+                e.preventDefault();
+                await requestCYOAResponses();
+            });
+        } else {
+            // Fallback: Add button to the main toolbar area
+            const toolbarSelectors = [
+                '#top-bar',
+                '.toolbar',
+                '#send_form',
+                '#rightSendForm',
+                '.right-panel-content'
+            ];
+
+            let toolbar = null;
+            for (const selector of toolbarSelectors) {
+                toolbar = $(selector);
+                if (toolbar.length > 0) {
+                    break;
+                }
+            }
+
+            if (toolbar && toolbar.length > 0) {
+                const regenerateButton = $(`
+                    <button id="cyoa_regenerate_toolbar_btn" class="menu_button" type="button" title="Regenerate CYOA Options">
+                        <i class="fa-solid fa-refresh"></i>
+                        <span>CYOA</span>
+                    </button>
+                `);
+                toolbar.first().append(regenerateButton);
+
+                $('#cyoa_regenerate_toolbar_btn').on('click', async function () {
+                    await requestCYOAResponses();
+                });
+            }
+        }
+    };
+
+    // Try to add the button immediately
+    addRegenerateButton();
+
+    // Also try again after a delay in case the Extensions menu loads later
+    setTimeout(addRegenerateButton, 2000);
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'cyoa',
         callback: async () => {
@@ -299,4 +469,7 @@ jQuery(async () => {
     // Event delegation for CYOA buttons
     $(document).on('click', 'button.custom-edit-suggestion', handleCYOABtn);
     $(document).on('click', 'button.custom-suggestion', handleCYOABtn);
+
+    // Listen for new messages to trigger auto-generation
+    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
 });
