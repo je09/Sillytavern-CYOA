@@ -53,6 +53,301 @@
     display: none;
 }
 
+/* CYOA Popup Modal Styles */
+#cyoa-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    display: none;
+}
+
+#cyoa-popup {
+    background-color: var(--SmartThemeEmptyColor);
+    border: 2px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    animation: cyoa-popup-appear 0.3s ease-out;
+    min-width: 350px;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Animation for popup appearance */
+@keyframes cyoa-popup-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Drag and resize handles */
+#cyoa-popup-header {
+    cursor: move;
+    padding: 1em 2em;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    user-select: none;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+#cyoa-popup-header.cyoa-dragging {
+    cursor: grabbing;
+}
+
+.cyoa-drag-icon {
+    font-size: 1.2em;
+    color: var(--SmartThemeQuoteColor);
+    transform: rotate(90deg);
+    opacity: 0.6;
+}
+
+.cyoa-resize-handle {
+    position: absolute;
+    background: transparent;
+}
+
+.cyoa-resize-handle.cyoa-resize-se {
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    cursor: se-resize;
+}
+
+.cyoa-resize-handle.cyoa-resize-sw {
+    bottom: 0;
+    left: 0;
+    width: 15px;
+    height: 15px;
+    cursor: sw-resize;
+}
+
+.cyoa-resize-handle.cyoa-resize-ne {
+    top: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    cursor: ne-resize;
+}
+
+.cyoa-resize-handle.cyoa-resize-nw {
+    top: 0;
+    left: 0;
+    width: 15px;
+    height: 15px;
+    cursor: nw-resize;
+}
+
+/* Add visual resize indicators */
+.cyoa-resize-handle::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--SmartThemeQuoteColor);
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.cyoa-resize-handle.cyoa-resize-se::after {
+    bottom: 2px;
+    right: 2px;
+    border-radius: 0 0 8px 0;
+}
+
+.cyoa-resize-handle.cyoa-resize-sw::after {
+    bottom: 2px;
+    left: 2px;
+    border-radius: 0 0 0 8px;
+}
+
+.cyoa-resize-handle.cyoa-resize-ne::after {
+    top: 2px;
+    right: 2px;
+    border-radius: 0 8px 0 0;
+}
+
+.cyoa-resize-handle.cyoa-resize-nw::after {
+    top: 2px;
+    left: 2px;
+    border-radius: 8px 0 0 0;
+}
+
+.cyoa-resize-handle:hover::after {
+    opacity: 0.7;
+}
+
+/* Disable text selection during drag/resize */
+.cyoa-user-select-none {
+    user-select: none !important;
+}
+
+#cyoa-popup-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--SmartThemeBodyColor);
+    margin: 0;
+}
+
+#cyoa-popup-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    padding: 0.25em;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#cyoa-popup-close:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+#cyoa-popup-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    flex: 1;
+    overflow-y: auto;
+    padding: 1em 2em;
+    max-height: 70vh;
+}
+
+.cyoa-popup-option {
+    background-color: var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    padding: 1.2em 1.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--SmartThemeBodyColor);
+    text-align: left;
+    font-size: 1em;
+    position: relative;
+    overflow: visible;
+    width: 100%;
+    min-height: 4em;
+    display: flex;
+    align-items: center;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.cyoa-popup-option:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+    border-color: var(--SmartThemeQuoteColor);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.cyoa-popup-option:active {
+    transform: translateY(0);
+}
+
+.cyoa-popup-option-number {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeEmptyColor);
+    width: 2em;
+    height: 2em;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    z-index: 1;
+}
+
+.cyoa-popup-option-text {
+    margin-right: 2.5em;
+    line-height: 1.5;
+    width: 100%;
+    display: block;
+}
+
+.cyoa-popup-hint {
+    margin-top: 0;
+    padding: 1em 2em;
+    text-align: center;
+    opacity: 0.7;
+    flex-shrink: 0;
+    border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+.cyoa-popup-hint small {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    #cyoa-popup {
+        max-width: 95%;
+        padding: 1em;
+    }
+
+    #cyoa-popup.positioned-below {
+        max-width: 95%;
+        left: 2.5% !important;
+        right: 2.5%;
+        width: auto;
+    }
+
+    .cyoa-popup-option {
+        padding: 1.2em 1.5em;
+        min-height: 4.5em;
+    }
+
+    .cyoa-popup-option-number {
+        width: 1.8em;
+        height: 1.8em;
+        font-size: 0.8em;
+        top: 0.3em;
+        right: 0.3em;
+    }
+
+    .cyoa-popup-option-text {
+        font-size: 0.95em;
+        margin-right: 2em;
+    }
+}
+
+/* Ensure popup stays within viewport */
+@media (max-height: 600px) {
+    #cyoa-popup {
+        max-height: 90vh;
+        padding: 1em;
+    }
+
+    #cyoa-popup-header {
+        margin-bottom: 1em;
+    }
+
+    .cyoa-popup-option {
+        padding: 0.7em;
+    }
+}
+
 /* CYOA Extension Menu Button Styles */
 #cyoa_regenerate_menu_btn {
     display: flex;

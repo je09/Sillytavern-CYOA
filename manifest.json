@@ -1,11 +1,13 @@
 {
-    "display_name": "Sillytavern-CYOA-AutoGenerate",
+    "display_name": "CYOA Auto-Generate",
     "loading_order": 15,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
     "author": ["@vitorfdl", "@je09"],
-    "version": "1.7",
-    "homePage": "https://github.com/je09/Sillytavern-CYOA"
+    "version": "1.7.0",
+    "homePage": "https://github.com/je09/Sillytavern-CYOA",
+    "description": "Automatically generates Choose Your Own Adventure style responses with clickable options for interactive storytelling.",
+    "auto_update": false
 }
